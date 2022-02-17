@@ -1956,13 +1956,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/eslint@npm:7.29.0":
-  version: 7.29.0
-  resolution: "@types/eslint@npm:7.29.0"
+"@types/eslint@npm:8.4.1":
+  version: 8.4.1
+  resolution: "@types/eslint@npm:8.4.1"
   dependencies:
     "@types/estree": "*"
     "@types/json-schema": "*"
-  checksum: df13991c554954353ce8f3bb03e19da6cc71916889443d68d178d4f858b561ba4cc4a4f291c6eb9eebb7f864b12b9b9313051b3a8dfea3e513dadf3188a77bdf
+  checksum: b5790997ee9d3820d16350192d41849b0e2448c9e93650acac672ddf502e35c0a5a25547172a9eec840a96687cd94ba1cee672cbd86640f8f4ff1b65960d2ab9
   languageName: node
   linkType: hard
 
@@ -6227,7 +6227,7 @@ __metadata:
     "@rollup/plugin-babel": 5.3.0
     "@rollup/plugin-commonjs": 21.0.1
     "@rollup/plugin-node-resolve": 13.1.3
-    "@types/eslint": 7.29.0
+    "@types/eslint": 8.4.1
     "@types/fs-extra": 9.0.13
     "@types/micromatch": 4.0.2
     "@types/semantic-release": 17.2.3
