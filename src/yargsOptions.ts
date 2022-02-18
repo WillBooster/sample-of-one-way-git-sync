@@ -8,8 +8,8 @@ export const yargsOptions = {
   prefix: {
     type: 'string',
     alias: 'p',
-    describe: `A prefix of a commit hash used to generate a commit message.
-                 The typical value is like "https://github.com/WillBooster/one-way-git-sync/commits/"`,
+    describe: `A prefix of a commit hash used to generate a commit title, e.g. 'sync <prefix>/<hash>'.
+               A typical value is like 'https://github.com/WillBooster/one-way-git-sync/commits'`,
   },
   branch: {
     type: 'string',
@@ -19,7 +19,7 @@ export const yargsOptions = {
   tag: {
     type: 'string',
     alias: 't',
-    describe: 'Specify tag created in destination repo.',
+    describe: 'Specify tag to be created in destination repo.',
   },
   'tag-hash': {
     type: 'boolean',
@@ -27,7 +27,7 @@ export const yargsOptions = {
   },
   'tag-version': {
     type: 'boolean',
-    describe: 'Create version tag (e.g. v1.31.5). It may be a non-unique tag.',
+    describe: 'Create version tag (e.g. v1.31.5). It could be a non-unique tag.',
   },
   dry: {
     type: 'boolean',

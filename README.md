@@ -14,8 +14,8 @@ It provides three features:
 
 ### Initial Usage
 
-Since `one-way-git-sync` finds a sync commit from the commit history of the dest repo,
-you need to run `init` subcommand to add an initial sync commit
+Because `one-way-git-sync` finds a sync commit from the commit history of the dest repo,
+you need to run `init` subcommand to add an initial sync commit to the dest repo
 by replacing all the files of the dest repo with those of src repo at first.
 The sample command is as follows:
 
@@ -27,8 +27,8 @@ yarn one-way-git-sync init \
 
 ### Usual Usage
 
-If the last commit in the destination repository is a sync commit,
-`one-way-git-sync` safely synchronize the destination repository with the source repository.
+If the last commit in the dest repo is a sync commit,
+`one-way-git-sync` safely synchronizes the dest repo with the src repo.
 The sample command is as follows:
 
 ```
@@ -39,16 +39,17 @@ yarn one-way-git-sync \
 
 ### How to Deal with Conflicts
 
-If the last commit in the destination repository isn't a sync commit and if it is not first time,
-the destination repository probably has a commit which doesn't exist in the source repository.
-You basically need to merge such commits in the source repository at first,
-then, you need to force synchronizing the destination repository with the source repository.
+If the last commit in the dest repo isn't a sync commit and if it is not first time,
+the dest repo probably has some commits (`conflict commits`) which don't exist in the src repo.
+You need to merge conflict commits in the src repo manually at first,
+then, you need to force synchronizing the dest repo with the src repo.
 The sample commands are as follows:
 
-1. `cd one-way-git-sync`
-2. `git remote add upstream https://github.com/WillBooster/sample-of-one-way-git-sync`
-3. `git merge --allow-unrelated-histories upstream/main`
-4. ```
+1. `yarn one-way-git-sync` fails then you notice there exist conflict commits
+2. `cd one-way-git-sync`
+3. `git remote add upstream https://github.com/WillBooster/sample-of-one-way-git-sync`
+4. `git merge --allow-unrelated-histories upstream/main`
+5. ```
    yarn one-way-git-sync --force \
      -d https://github.com/WillBooster/sample-of-one-way-git-sync \
      -p https://github.com/WillBooster/one-way-git-sync/commits/
@@ -56,7 +57,7 @@ The sample commands are as follows:
 
 ## Example Repository and Example GitHub Actions Workflows
 
-[sample-of-one-way-git-sync](https://github.com/WillBooster/sample-of-one-way-git-sync) is an example synchronized repository.
-[release.yml](.github/workflows/release.yml) workflow releases a new npm package and add a tag automatically in this repository using `semantic-release`.
-When a new version is released, [sync.yml](.github/workflows/sync.yml) workflow synchronizes `sample-of-one-way-git-sync` repository using `one-way-git-sync`.
-We can manually trigger [force-sync.yml](.github/workflows/force-sync.yml) workflow which forces synchronizing `sample-of-one-way-git-sync` repository.
+- [sample-of-one-way-git-sync](https://github.com/WillBooster/sample-of-one-way-git-sync): an example synchronized repository.
+- [release.yml](.github/workflows/release.yml): releases a new npm package and add a tag automatically in this repository using `semantic-release`.
+- [sync.yml](.github/workflows/sync.yml): it synchronizes `sample-of-one-way-git-sync` repository using `one-way-git-sync` when a new version is released.
+- [force-sync.yml](.github/workflows/sync-force.yml): we can manually trigger this workflow which forces synchronizing `sample-of-one-way-git-sync` repository.
