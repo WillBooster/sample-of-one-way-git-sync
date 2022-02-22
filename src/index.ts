@@ -3,7 +3,8 @@ import fsp from 'fs/promises';
 import path from 'path';
 
 import fse from 'fs-extra';
-import type { LogResult } from 'simple-git';
+import micromatch from 'micromatch';
+import type { LogResult, TaskOptions } from 'simple-git';
 import simpleGit, { SimpleGit } from 'simple-git';
 import { InferredOptionTypes } from 'yargs';
 
@@ -11,7 +12,6 @@ import { logger } from './logger';
 import { yargsOptions } from './yargsOptions';
 
 const syncDirPath = path.join('node_modules', '.temp', 'sync-git-repo');
-const ignoreNames = ['.git', '.github', 'node_modules'];
 
 export async function sync(opts: InferredOptionTypes<typeof yargsOptions>, init: boolean): Promise<void> {
   await fsp.mkdir(syncDirPath, { recursive: true });
@@ -33,7 +33,15 @@ async function syncCore(
   if (opts.branch) {
     cloneOpts['--branch'] = opts.branch;
   }
-  await simpleGit().clone(opts.dest, destRepoPath, cloneOpts);
+  try {
+    await simpleGit().clone(opts.dest, destRepoPath, cloneOpts);
+  } catch (e) {
+    if (!init) throw e;
+
+    delete cloneOpts['--single-branch'];
+    await simpleGit().clone(opts.dest, destRepoPath, cloneOpts);
+    simpleGit(destRepoPath).checkout(['-b', opts.branch] as TaskOptions);
+  }
   logger.verbose(`Cloned a destination repo on ${destRepoPath}`);
 
   const dstGit: SimpleGit = simpleGit(destRepoPath);
@@ -66,12 +74,10 @@ async function syncCore(
   }
 
   const [destFiles, srcFiles] = await Promise.all([fsp.readdir(destRepoPath), fsp.readdir('.')]);
-  for (const destFile of destFiles) {
-    if (ignoreNames.includes(destFile)) continue;
+  for (const destFile of micromatch.not(destFiles, opts['ignore-patterns'])) {
     await fsp.rm(path.join(destRepoPath, destFile), { recursive: true, force: true });
   }
-  for (const srcFile of srcFiles) {
-    if (ignoreNames.includes(srcFile)) continue;
+  for (const srcFile of micromatch.not(srcFiles, opts['ignore-patterns'])) {
     fse.copySync(srcFile, path.join(destRepoPath, srcFile));
   }
   await dstGit.add('-A');
