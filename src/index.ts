@@ -8,24 +8,21 @@ import type { LogResult, TaskOptions } from 'simple-git';
 import simpleGit, { SimpleGit } from 'simple-git';
 import { InferredOptionTypes } from 'yargs';
 
+import { getGitHubCommitsUrl } from './gitHub';
 import { logger } from './logger';
 import { yargsOptions } from './yargsOptions';
 
 const syncDirPath = path.join('node_modules', '.temp', 'sync-git-repo');
 
-export async function sync(opts: InferredOptionTypes<typeof yargsOptions>, init: boolean): Promise<void> {
+export async function sync(opts: InferredOptionTypes<typeof yargsOptions>): Promise<void> {
   await fsp.mkdir(syncDirPath, { recursive: true });
   const dirPath = await fsp.mkdtemp(path.join(syncDirPath, 'repo-'));
-  const ret = await syncCore(dirPath, opts, init);
+  const ret = await syncCore(dirPath, opts);
   await fsp.rm(dirPath, { recursive: true, force: true });
   process.exit(ret ? 0 : 1);
 }
 
-async function syncCore(
-  destRepoPath: string,
-  opts: InferredOptionTypes<typeof yargsOptions>,
-  init: boolean
-): Promise<boolean> {
+async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof yargsOptions>): Promise<boolean> {
   const cloneOpts: Record<string, any> = { '--single-branch': undefined };
   if (!opts.force) {
     cloneOpts['--depth'] = 1;
@@ -36,8 +33,6 @@ async function syncCore(
   try {
     await simpleGit().clone(opts.dest, destRepoPath, cloneOpts);
   } catch (e) {
-    if (!init) throw e;
-
     delete cloneOpts['--single-branch'];
     await simpleGit().clone(opts.dest, destRepoPath, cloneOpts);
     simpleGit(destRepoPath).checkout(['-b', opts.branch] as TaskOptions);
@@ -47,14 +42,11 @@ async function syncCore(
   const dstGit: SimpleGit = simpleGit(destRepoPath);
   const dstLog = await dstGit.log();
 
-  let from: string | undefined;
-  if (!init) {
-    from = extractCommitHash(dstLog);
-    if (!from) {
-      logger.error('No valid commit in destination repo');
-      return false;
-    }
+  const from = extractCommitHash(dstLog);
+  if (from) {
     logger.verbose(`Extracted a valid commit: ${from}`);
+  } else {
+    logger.warn('No valid commit in destination repo');
   }
 
   const srcGit: SimpleGit = simpleGit();
@@ -88,15 +80,15 @@ async function syncCore(
     const describeCommand = `git describe --tags --always ${opts['tag-version'] ? '--abbrev=0' : ''}`;
     srcTag = child_process.execSync(describeCommand).toString().trim();
   }
-  let prefix = opts.prefix ?? '';
+  let prefix = opts.prefix ?? (await getGitHubCommitsUrl(srcGit)) ?? '';
   if (prefix && !prefix.endsWith('/')) {
     prefix += '/';
   }
   const link = `${prefix}${latestHash}`;
   const title = srcTag ? `sync ${srcTag} (${link})` : `sync ${link}`;
-  const body = init
-    ? `Initialize one-way-git-sync by replacing all the files with those of ${opts.dest}`
-    : srcLog.all.map((l) => `* ${l.message}`).join('\n\n');
+  const body = from
+    ? srcLog.all.map((l) => `* ${l.message}`).join('\n\n')
+    : `Replace all the files with those of ${opts.dest} due to missing sync commit`;
   try {
     await dstGit.commit(`${title}\n\n${body}`);
     logger.verbose(`Created a commit: ${title}`);

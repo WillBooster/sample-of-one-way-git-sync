@@ -1,17 +1,16 @@
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs/yargs';
 
-import { initCommand } from './initCommand';
 import { logger } from './logger';
-import { syncCommand } from './syncCommand';
 import { yargsOptions } from './yargsOptions';
 
-export async function cli(argv: string[]): Promise<void> {
-  await yargs(hideBin(argv))
+import { sync } from './index';
+
+export async function cli(args: string[]): Promise<void> {
+  const argv = await yargs(hideBin(args))
     .options(yargsOptions)
     .middleware((argv) => {
       logger.level = argv.verbose ? 'verbose' : 'info';
-    })
-    .command(initCommand)
-    .command(syncCommand).argv;
+    }).argv;
+  await sync(argv);
 }
