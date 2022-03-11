@@ -18,7 +18,7 @@ export async function sync(opts: InferredOptionTypes<typeof yargsOptions>): Prom
   await fsp.mkdir(syncDirPath, { recursive: true });
   const dirPath = await fsp.mkdtemp(path.join(syncDirPath, 'repo-'));
   const ret = await syncCore(dirPath, opts);
-  await fsp.rm(dirPath, { recursive: true, force: true });
+  // await fsp.rm(dirPath, { recursive: true, force: true });
   process.exit(ret ? 0 : 1);
 }
 
@@ -37,16 +37,18 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
     await simpleGit().clone(opts.dest, destRepoPath, cloneOpts);
     simpleGit(destRepoPath).checkout(['-b', opts.branch] as TaskOptions);
   }
-  logger.verbose(`Cloned a destination repo on ${destRepoPath}`);
+  logger.verbose(`Cloned destination repo on ${destRepoPath}`);
 
   const dstGit: SimpleGit = simpleGit(destRepoPath);
   const dstLog = await dstGit.log();
 
-  const from = extractCommitHash(dstLog);
+  const [head, from] = extractCommitHash(dstLog);
   if (from) {
     logger.verbose(`Extracted a valid commit: ${from}`);
-  } else {
-    logger.warn('No valid commit in destination repo');
+    logger.verbose(`(${head})`);
+  } else if (!opts.force) {
+    logger.error('No valid commit in destination repo');
+    return false;
   }
 
   const srcGit: SimpleGit = simpleGit();
@@ -88,7 +90,7 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
   const title = srcTag ? `sync ${srcTag} (${link})` : `sync ${link}`;
   const body = from
     ? srcLog.all.map((l) => `* ${l.message}`).join('\n\n')
-    : `Replace all the files with those of ${opts.dest} due to missing sync commit`;
+    : `Replace all the files with those of ${opts.dest} due to missing sync commit.`;
   try {
     await dstGit.commit(`${title}\n\n${body}`);
     logger.verbose(`Created a commit: ${title}`);
@@ -128,18 +130,18 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
   return true;
 }
 
-function extractCommitHash(logResult: LogResult): string | undefined {
+function extractCommitHash(logResult: LogResult): [string, string] | [] {
   if (logResult.all.length === 0) {
-    logger.error('No commit history');
-    return;
+    logger.verbose('No commit history');
+    return [];
   }
 
   for (const log of logResult.all) {
     const [head, ...words] = log.message.replace(/[()]/g, '').split(/[\s/]/);
     if (head === 'sync' && words.length) {
-      return words[words.length - 1];
+      return [log.message, words[words.length - 1]];
     }
   }
-  logger.error(`No sync commit: ${logResult.all[0].message}`);
-  return;
+  logger.verbose(`No sync commit: ${logResult.all[0].message}`);
+  return [];
 }
