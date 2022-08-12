@@ -51,7 +51,7 @@
     "@willbooster/prettier-config": "9.0.0",
     "@willbooster/renovate-config": "9.3.0",
     "conventional-changelog-conventionalcommits": "4.6.3",
-    "esbuild": "0.15.1",
+    "esbuild": "0.15.2",
     "esbuild-register": "3.3.3",
     "eslint": "8.21.0",
     "eslint-config-prettier": "8.5.0",
