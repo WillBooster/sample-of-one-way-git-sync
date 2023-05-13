@@ -1,24 +1,24 @@
-import child_process from 'child_process';
-import fsp from 'fs/promises';
-import path from 'path';
+import child_process from 'node:child_process';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
-import fse from 'fs-extra';
+import { copy } from 'fs-extra';
 import micromatch from 'micromatch';
 import type { LogResult, TaskOptions } from 'simple-git';
-import simpleGit, { SimpleGit } from 'simple-git';
+import { simpleGit, SimpleGit } from 'simple-git';
 import { InferredOptionTypes } from 'yargs';
 
-import { getGitHubCommitsUrl } from './gitHub';
-import { logger } from './logger';
-import { yargsOptions } from './yargsOptions';
+import { getGitHubCommitsUrl } from './gitHub.js';
+import { logger } from './logger.js';
+import { yargsOptions } from './yargsOptions.js';
 
 const syncDirPath = path.join('node_modules', '.temp', 'sync-git-repo');
 
 export async function sync(opts: InferredOptionTypes<typeof yargsOptions>): Promise<void> {
-  await fsp.mkdir(syncDirPath, { recursive: true });
-  const dirPath = await fsp.mkdtemp(path.join(syncDirPath, 'repo-'));
+  await fs.mkdir(syncDirPath, { recursive: true });
+  const dirPath = await fs.mkdtemp(path.join(syncDirPath, 'repo-'));
   const ret = await syncCore(dirPath, opts);
-  // await fsp.rm(dirPath, { recursive: true, force: true });
+  // await fs.rm(dirPath, { recursive: true, force: true });
   process.exit(ret ? 0 : 1);
 }
 
@@ -32,7 +32,8 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
   }
   try {
     await simpleGit().clone(opts.dest, destRepoPath, cloneOpts);
-  } catch (e) {
+  } catch {
+    delete cloneOpts['--branch'];
     delete cloneOpts['--single-branch'];
     await simpleGit().clone(opts.dest, destRepoPath, cloneOpts);
     simpleGit(destRepoPath).checkout(['-b', opts.branch] as TaskOptions);
@@ -56,8 +57,8 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
   try {
     // '--first-parent' hides children commits of merge commits
     srcLog = await srcGit.log(from ? { from, to: 'HEAD', '--first-parent': undefined } : undefined);
-  } catch (e) {
-    logger.error(`Failed to get source commit history: ${(e as Error).stack}`);
+  } catch (error) {
+    logger.error(`Failed to get source commit history: ${(error as Error).stack}`);
     return false;
   }
 
@@ -67,12 +68,12 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
     return true;
   }
 
-  const [destFiles, srcFiles] = await Promise.all([fsp.readdir(destRepoPath), fsp.readdir('.')]);
+  const [destFiles, srcFiles] = await Promise.all([fs.readdir(destRepoPath), fs.readdir('.')]);
   for (const destFile of micromatch.not(destFiles, opts['ignore-patterns'])) {
-    await fsp.rm(path.join(destRepoPath, destFile), { recursive: true, force: true });
+    await fs.rm(path.join(destRepoPath, destFile), { recursive: true, force: true });
   }
   for (const srcFile of micromatch.not(srcFiles, opts['ignore-patterns'])) {
-    fse.copySync(srcFile, path.join(destRepoPath, srcFile));
+    await copy(srcFile, path.join(destRepoPath, srcFile));
   }
   await dstGit.add('-A');
 
@@ -95,8 +96,8 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
     await dstGit.commit(`${title}\n\n${body}`);
     logger.verbose(`Created a commit: ${title}`);
     logger.verbose(`  with body: ${body}`);
-  } catch (e) {
-    logger.error(`Failed to commit changes: ${(e as Error).stack}\`);`);
+  } catch (error) {
+    logger.error(`Failed to commit changes: ${(error as Error).stack}\`);`);
     return false;
   }
 
@@ -105,8 +106,8 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
     try {
       await dstGit.addTag(destTag);
       logger.verbose(`Created a tag: ${destTag}`);
-    } catch (e) {
-      logger.error(`Failed to commit changes: ${(e as Error).stack}\`);`);
+    } catch (error) {
+      logger.error(`Failed to commit changes: ${(error as Error).stack}\`);`);
       return false;
     }
   }
@@ -117,12 +118,12 @@ async function syncCore(destRepoPath: string, opts: InferredOptionTypes<typeof y
   }
 
   try {
-    await dstGit.push();
+    await (opts.branch ? dstGit.push('origin', opts.branch) : dstGit.push());
     if (destTag) {
       await dstGit.push({ '--tags': null });
     }
-  } catch (e) {
-    logger.error(`Failed to push the commit: ${(e as Error).stack}`);
+  } catch (error) {
+    logger.error(`Failed to push the commit: ${(error as Error).stack}`);
     return false;
   }
 
@@ -137,9 +138,9 @@ function extractCommitHash(logResult: LogResult): [string, string] | [] {
   }
 
   for (const log of logResult.all) {
-    const [head, ...words] = log.message.replace(/[()]/g, '').split(/[\s/]/);
-    if (head === 'sync' && words.length) {
-      return [log.message, words[words.length - 1]];
+    const [head, ...words] = log.message.replaceAll(/[()]/g, '').split(/[\s/]/);
+    if (head === 'sync' && words.length > 0) {
+      return [log.message, words.at(-1) as string];
     }
   }
   logger.verbose(`No sync commit: ${logResult.all[0].message}`);
