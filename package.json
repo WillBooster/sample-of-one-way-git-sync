@@ -36,9 +36,9 @@
   "dependencies": {
     "fs-extra": "11.2.0",
     "micromatch": "4.0.8",
-    "pino": "9.3.2",
+    "pino": "9.4.0",
     "pino-pretty": "11.2.2",
-    "simple-git": "3.25.0",
+    "simple-git": "3.26.0",
     "yargs": "17.7.2"
   },
   "devDependencies": {
@@ -47,21 +47,21 @@
     "@types/micromatch": "4.0.9",
     "@types/semantic-release": "20.0.6",
     "@types/yargs": "17.0.33",
-    "@typescript-eslint/eslint-plugin": "8.2.0",
-    "@typescript-eslint/parser": "8.2.0",
+    "@typescript-eslint/eslint-plugin": "8.4.0",
+    "@typescript-eslint/parser": "8.4.0",
     "@willbooster/eslint-config-ts": "10.6.0",
     "@willbooster/prettier-config": "9.1.2",
     "build-ts": "13.1.8",
     "conventional-changelog-conventionalcommits": "8.0.0",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
-    "eslint-import-resolver-typescript": "3.6.1",
-    "eslint-plugin-import": "2.29.1",
+    "eslint-import-resolver-typescript": "3.6.3",
+    "eslint-plugin-import": "2.30.0",
     "eslint-plugin-sort-class-members": "1.20.0",
     "eslint-plugin-sort-destructure-keys": "2.0.0",
     "eslint-plugin-unicorn": "55.0.0",
     "husky": "9.1.5",
-    "lint-staged": "15.2.9",
+    "lint-staged": "15.2.10",
     "pinst": "3.0.0",
     "prettier": "3.3.3",
     "semantic-release": "24.1.0",
@@ -69,7 +69,7 @@
     "typescript": "5.5.4",
     "vitest": "1.6.0"
   },
-  "packageManager": "yarn@4.4.0",
+  "packageManager": "yarn@4.4.1",
   "engines": {
     "node": ">=18"
   },
